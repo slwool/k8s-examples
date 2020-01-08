@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch
+  namespace: kube-elk
+data:
+  elasticsearch.yml: |
+    cluster.name: ${NAMESPACE}
+    node.name: ${POD_NAME}
+    network.host: 0.0.0.0
+    
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: elasticsearch
+  name: elasticsearch
+  namespace: kube-elk
+spec:
+  ports:
+    - name: cluster-port
+      port: 9300
+      targetPort: cluster-port
+    - name: http-port
+      port: 9200
+      targetPort: http-port
+  selector:
+    app: elasticsearch
+    
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: kube-elk
+  labels:
+    app: elasticsearch
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      hostname: elasticsearch
+      containers:
+      - name: elasticsearch
+        image: docker-registry.dhc:5000/elasticsearch:7.5.1
+        imagePullPolicy: Always
+        env:
+          - name: "discovery.type"
+            value: "single-node"
+#          - name: ES_JAVA_OPTS
+#            value: |
+#              -Xms512m -Xmx1g
+#          - name: ES_PATH_CONF
+#            value: |
+#              /path/to/my/config
+          - name: NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name                       
+        volumeMounts:
+          - name: elasticsearch-config
+            mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+            subPath: elasticsearch.yml
+          - name: elasticsearch-volume
+            mountPath: /usr/share/elasticsearch/data
+            subPath: elasticsearch/data
+        ports:
+          - name: http-port
+            containerPort: 9200
+          - name: cluster-port
+            containerPort: 9300
+      volumes:
+        - name: elasticsearch-config
+          configMap:
+            name: elasticsearch
+        - name: elasticsearch-volume
+          persistentVolumeClaim:
+            claimName: elk-storage-pvc

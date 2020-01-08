@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iprs-user
+  namespace: slw
+  labels:
+    app: iprs-user
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: iprs-user
+  template:
+    metadata:
+      labels:
+        app: iprs-user
+    spec:
+      hostname: iprs-user
+      containers:
+      - name: iprs-user
+        image: 172.28.110.203:5000/slw/iprs-user
+        imagePullPolicy: Always
+        ports:
+          - name: http
+            containerPort: 80
+        env:
+          - name: JAVA_OPTS
+            value: |
+              -Dserver.port=80 -Dspring.profiles.active=iprs,local-file
+              -Xms512m -Xmx1g
+          - name: HOST_NAME
+            value: "iprs-user.slw"
+          - name: TZ
+            value: "Asia/Shanghai"                        
+        volumeMounts:
+          - name: iprs-user-volume
+            mountPath: /iprs-user/logs/
+            subPath: platform/logs/iprs-user
+          - name: iprs-user-volume
+            mountPath: /mnt/default/
+            subPath: 
+      volumes:
+        - name: iprs-user-volume
+          persistentVolumeClaim:
+            claimName: slw-storage-pvc
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: iprs-user
+  namespace: slw
+spec:
+  selector:
+    app: iprs-user
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: iprs-user
+  namespace: slw
+spec:
+  rules:
+  - host: iprs-user.slw
+    http:
+      paths:
+      - backend:
+          serviceName: iprs-user
+          servicePort: http
+        path: /

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mctool
+  namespace: slw
+  labels:
+    app: mctool
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: mctool
+  template:
+    metadata:
+      labels:
+        app: mctool
+    spec:
+      hostname: mctool
+      containers:
+      - name: mctool
+        image: 172.28.110.203:5000/slw/mctool
+        imagePullPolicy: Always
+        ports:
+          - name: http
+            containerPort: 80
+          - name: mctool-udp
+            containerPort: 12345
+            protocol: UDP
+        
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: mctool
+  namespace: slw
+spec:
+  selector:
+    app: mctool
+  ports:
+  - name: mctool-udp
+    port: 12345
+    targetPort: 12345
+    protocol: UDP
+        

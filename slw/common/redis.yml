@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: slw
+  labels: 
+    app: redis
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:5.0.7
+        command:
+          - "redis-server"
+        args:
+          - "/etc/redis/redis.conf"
+          - "--protected-mode"
+          - "no"
+        ports:
+          - name: redis-port
+            containerPort: 6379
+            hostPort: 6379
+        volumeMounts:
+          - name:  redis-volume
+            mountPath:  /etc/redis
+            subPath: redis/conf
+          - name:  redis-volume
+            mountPath:  /var/lib/redis
+            subPath: redis/data
+      volumes:
+        - name: redis-volume
+          persistentVolumeClaim:
+           claimName: slw-storage-pvc
+     
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: redis
+  namespace: slw
+spec:
+  selector:
+    app: redis
+  ports:
+  - name: redis-port
+    port: 6379
+    targetPort: redis-port

@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iprs-config-server
+  namespace: slw
+  labels:
+    app: iprs-config-server
+spec:
+  replicas: 1
+  selector: 
+    matchLabels:
+      app: iprs-config-server
+  template:
+    metadata:
+      labels:
+        app: iprs-config-server
+    spec:
+      hostname: iprs-config-server
+      containers:
+      - name: iprs-config-server
+        image: 172.28.110.203:5000/slw/iprs-config-server
+        imagePullPolicy: Always
+        ports:
+          - name: http
+            containerPort: 80
+        env:
+          - name: JAVA_OPTS
+            value: |
+              -Dserver.port=80 -Dspring.profiles.active=iprs,local-file
+              -Xms512m -Xmx1g
+          - name: HOST_NAME
+            value: "config-server.slw"
+          - name: TZ
+            value: "Asia/Shanghai"             
+        volumeMounts:
+          - name: iprs-config-server-volume
+            mountPath: /iprs-config-server/logs/
+            subPath: platform/logs/iprs-config-server
+          - name: iprs-config-server-volume
+            mountPath: /app-configs
+            subPath: platform/app-configs
+      volumes:
+        - name: iprs-config-server-volume
+          persistentVolumeClaim:
+            claimName: slw-storage-pvc          
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: iprs-config-server
+  namespace: slw
+spec:
+  selector:
+    app: iprs-config-server
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: iprs-config-server
+  namespace: slw
+spec:
+  rules:
+  - host: config-server.slw
+    http:
+      paths:
+      - backend:
+          serviceName: iprs-config-server
+          servicePort: http
+        path: /

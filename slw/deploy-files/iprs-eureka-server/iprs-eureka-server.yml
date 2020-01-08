@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iprs-eureka-server
+  namespace: slw
+  labels:
+    app: iprs-eureka-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: iprs-eureka-server
+  template:
+    metadata:
+      labels:
+        app: iprs-eureka-server
+    spec:
+      hostname: iprs-eureka-server
+      containers:
+      - name: iprs-eureka-server
+        image: 172.28.110.203:5000/slw/iprs-eureka-server
+        imagePullPolicy: Always
+        ports:
+          - name: http
+            containerPort: 80
+        env:
+          - name: JAVA_OPTS
+            value: |
+              -Dserver.port=80 -Dspring.profiles.active=iprs,local-file
+              -Xms256m -Xmx256m
+          - name: TZ
+            value: "Asia/Shanghai"
+          - name: HOST_NAME
+            value: "eureka-server.slw"
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: iprs-eureka-server
+  namespace: slw
+spec:
+  selector:
+    app: iprs-eureka-server
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: iprs-eureka-server
+  namespace: slw
+#  annotations:
+#    nginx.ingress.kubernetes.io/rewrite-target: /
+#    nginx.ingress.kubernetes.io/app-root: /eureka-server
+#    nginx.ingress.kubernetes.io/configuration-snippet: |
+#      rewrite /($.*) /eureka-server/$1 break;
+spec:
+  rules:
+  - host: eureka-server.slw
+    http:
+      paths:
+      - backend:
+          serviceName: iprs-eureka-server
+          servicePort: http
+

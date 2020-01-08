@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: iprs-config-server
+  profiles:
+    active: native,iprs
+  cloud:
+    config:
+      server:
+        native:
+          default-label: 'v1.0.0'
+          search-locations: file:/app-configs/{application}/{label}/
+        health:
+          enabled: false
+      discovery:
+        enabled: false
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - appInfo
+        - info
+        - health
+        - prometheus
+eureka:
+  instance:
+    lease-expiration-duration-in-seconds: 10 #服务过期时间配置,超过这个时间没有接收到心跳EurekaServer就会将这个实例剔除
+    lease-renewal-interval-in-seconds: 5 #服务刷新时间配置，每隔这个时间会主动心跳一次
+    hostname: ${HOST_NAME:${HOSTNAME}}
+  client:
+    register-with-eureka: true
+    healthcheck:
+      enabled: true
+    serviceUrl:
+      defaultZone: http://eureka-server.slw/eureka/
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          strategy: THREAD
+          thread:
+            timeoutInMilliseconds: 30000
+logging:
+  file: iprs-config-server/logs/iprs-config-server
+  level:
+    com.dhcloud: info
+
+# when dev and test
+statsh:
+  connect-str:  

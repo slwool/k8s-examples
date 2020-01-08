@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: iprs-eureka-server
+  cloud:
+    config:
+      discovery:
+        enabled: true
+  profiles:
+    active: iprs
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://eureka-server.slw/eureka/
+      register-with-eureka: true
+    healthcheck:
+      enabled: true
+  instance:
+    hostname: ${HOST_NAME:${HOSTNAME}}
+  server:
+    enable-self-preservation: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+        - appInfo
+        - info
+        - health
+        - prometheus
+
+rest:
+  max-timeout-seconds: 60
+  max-connection: 1000
+
+hystrix:
+  command:
+    default:
+      execution:
+        isolation:
+          strategy: THREAD
+          thread:
+            timeoutInMilliseconds: 30000
+      circuitBreaker:
+        enabled: false
+  threadpool:
+    default:
+      coreSize: 200
+      maximumSize: 200
+      queueSizeRejectionThreshold: 400
+      maxQueueSize: 500
+
+ribbon:
+  ReadTimeout: 60000
+  ConnectTimeout: 5000
+
+logging:
+  file: iprs-eureka-server/logs/iprs-eureka-server
+  level:
+    com.dhcloud: info
+
+# when dev and test
+statsh:
+  connect-str:  
+
+
+ 
+
+
+
+

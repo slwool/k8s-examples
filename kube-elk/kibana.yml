@@ -1,0 +1,64 @@
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: kibana
+  name: kibana
+  namespace: kube-elk
+spec:
+  ports:
+    - port: 5601
+      targetPort: 5601
+      name: http-port
+  selector:
+    app: kibana
+    
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+  namespace: kube-elk
+  labels:
+    app: kibana
+spec:
+  replicas: 1
+  selector:
+      matchLabels:
+        app: kibana
+  template:
+    metadata:
+      labels:
+        app: kibana
+    spec:
+      hostname: kibana
+      containers:
+      - name: kibana
+        image: docker-registry.dhc:5000/kibana:7.5.1
+        imagePullPolicy: Always
+        env:
+          - name: SERVER_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: ELASTICSEARCH_HOSTS
+            value: http://elasticsearch:9200
+        ports:
+          - name: http-port
+            containerPort: 5601
+            
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kibana
+  namespace: kube-elk
+spec:
+  rules:
+  - host: kibana.oem
+    http:
+      paths:
+      - backend:
+          serviceName: kibana
+          servicePort: http-port
