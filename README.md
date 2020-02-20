@@ -1,2 +1,3 @@
 # k8s-examples
 k8s-examples
+k8s系统 + dashboard + prometheus + elk + spring cloud + mysql + redis ...
